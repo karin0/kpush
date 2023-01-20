@@ -24,23 +24,27 @@ struct Args {
     title: Option<String>,
 }
 
-fn detect_proxy<'a>() -> Option<Cow<'a, str>> {
+fn detect_proxy_in<'a>(file: impl AsRef<Path>) -> Option<Cow<'a, str>> {
+    if let Ok(mut f) = File::open(file) {
+        let mut proxy = String::with_capacity(25);
+        f.read_to_string(&mut proxy).unwrap();
+        proxy.truncate(proxy.trim_end().len());
+        if proxy.is_empty() {
+            return Some(Cow::Borrowed("http://127.0.0.1:10808"));
+        }
+        proxy.shrink_to_fit();
+        return Some(Cow::Owned(proxy));
+    }
+    None
+}
+
+fn detect_proxy() -> Option<impl AsRef<str>> {
     if let Ok(proxy) = env::var("HTTP_PROXY") {
         return Some(Cow::Owned(proxy));
     }
-    if let Some(home) = env::var_os("HOME") {
-        if let Ok(mut f) = File::open(Path::new(&home).join(".kproxy")) {
-            let mut proxy = String::with_capacity(25);
-            f.read_to_string(&mut proxy).unwrap();
-            proxy.truncate(proxy.trim_end().len());
-            if proxy.is_empty() {
-                return Some(Cow::Borrowed("http://127.0.0.1:10808"));
-            }
-            proxy.shrink_to_fit();
-            return Some(Cow::Owned(proxy));
-        }
-    }
-    None
+    env::var_os("HOME")
+        .and_then(|h| detect_proxy_in(Path::new(&h).join(".krr_proxy")))
+        .or_else(|| detect_proxy_in("/etc/krr_proxy"))
 }
 
 fn main() {
@@ -72,7 +76,7 @@ fn main() {
         .timeout_connect(timeout)
         .timeout_write(timeout);
     let http = if let Some(proxy) = detect_proxy() {
-        eprintln!("using proxy {:?}", proxy);
+        eprintln!("using proxy {}", proxy.as_ref());
         http.proxy(ureq::Proxy::new(proxy).unwrap())
     } else {
         http
