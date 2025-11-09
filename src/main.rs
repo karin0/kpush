@@ -43,6 +43,7 @@ const URL: &str = concat!(
     "/sendMessage"
 );
 const CHAT_ID: &str = env!("CHAT_ID");
+const CHAT_ID_SILENT: &str = env!("CHAT_ID_SILENT");
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -50,6 +51,8 @@ struct Args {
     body: Option<String>,
     #[arg(short)]
     title: Option<String>,
+    #[arg(short)]
+    silent: bool,
 }
 
 fn main() {
@@ -94,10 +97,19 @@ fn main() {
 
     let http: Agent = http.build().into();
 
-    match http
-        .post(URL)
-        .send_form([("chat_id", CHAT_ID), ("text", &msg), ("parse_mode", "HTML")])
-    {
+    let result = if args.silent {
+        http.post(URL).send_form([
+            ("chat_id", CHAT_ID_SILENT),
+            ("text", &msg),
+            ("parse_mode", "HTML"),
+            ("disable_notification", "true"),
+        ])
+    } else {
+        http.post(URL)
+            .send_form([("chat_id", CHAT_ID), ("text", &msg), ("parse_mode", "HTML")])
+    };
+
+    match result {
         Ok(mut resp) => {
             let st = resp.status();
             if !st.is_success() {
