@@ -115,13 +115,13 @@ fn main() {
             if !st.is_success() {
                 eprintln!("status: {} {:?}", st, st.canonical_reason());
                 match resp.body_mut().read_to_string() {
-                    Ok(s) => eprintln!("{}", s),
-                    Err(e) => eprintln!("read: {:?}", e),
+                    Ok(s) => eprintln!("{s}"),
+                    Err(e) => eprintln!("read: {e:?}"),
                 }
             }
         }
         Err(e) => {
-            eprintln!("error: {}", e);
+            eprintln!("error: {e}");
         }
     }
 }
