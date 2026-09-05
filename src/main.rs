@@ -135,17 +135,20 @@ fn main() -> ExitCode {
 
     let http: Agent = http.build().into();
 
-    let (chat_id, silent) = if args.silent {
-        (CHAT_ID_SILENT, "true")
-    } else {
-        (CHAT_ID, "false")
-    };
-    let result = http.post(URL).send_form([
-        ("chat_id", args.chat.as_deref().unwrap_or(chat_id)),
-        ("text", &msg),
-        ("parse_mode", "HTML"),
-        ("disable_notification", silent),
-    ]);
+    let chat_id =
+        args.chat
+            .as_deref()
+            .unwrap_or(if args.silent { CHAT_ID_SILENT } else { CHAT_ID });
+    // Telegram reads a missing disable_notification as false.
+    let result = http.post(URL).send_form(
+        [
+            ("chat_id", chat_id),
+            ("text", msg.as_str()),
+            ("parse_mode", "HTML"),
+        ]
+        .into_iter()
+        .chain(args.silent.then_some(("disable_notification", "true"))),
+    );
 
     match result {
         Ok(mut resp) => {
