@@ -81,7 +81,8 @@ fn clamp(body: &str, limit: usize) -> (&str, &str) {
     (body, "")
 }
 
-/// Message text for `parse_mode=HTML`, clamped to what Telegram accepts.
+/// Message text for `parse_mode=HTML`, clamped to what Telegram accepts. The
+/// title carries markup from the caller, the body is escaped into a `<pre>`.
 fn compose(title: &str, body: &str) -> String {
     let title = title.trim_end();
     let used = if title.is_empty() {
@@ -92,7 +93,7 @@ fn compose(title: &str, body: &str) -> String {
     let (body, truncated) = clamp(body.trim_end(), TEXT_LIMIT.saturating_sub(used));
 
     let mut msg = String::with_capacity(body.len() + title.len() + 32);
-    encode_text_to_string(title, &mut msg);
+    msg.push_str(title);
     if !title.is_empty() {
         msg.push('\n');
     }
@@ -176,10 +177,10 @@ mod tests {
     }
 
     #[test]
-    fn escapes_the_title() {
+    fn keeps_title_markup_and_escapes_the_body() {
         assert_eq!(
-            compose("build & test", "ok"),
-            "build &amp; test\n<pre>ok</pre>"
+            compose("<b>x</b>", "a & b"),
+            "<b>x</b>\n<pre>a &amp; b</pre>"
         );
     }
 
