@@ -60,6 +60,9 @@ struct Args {
     title: Option<String>,
     #[arg(short)]
     silent: bool,
+    /// Chat to send to, in place of the built-in one
+    #[arg(short, allow_hyphen_values = true)]
+    chat: Option<String>,
 }
 
 /// Longest prefix of `body` that leaves `TRUNCATED` room within `limit` units.
@@ -138,7 +141,7 @@ fn main() -> ExitCode {
         (CHAT_ID, "false")
     };
     let result = http.post(URL).send_form([
-        ("chat_id", chat_id),
+        ("chat_id", args.chat.as_deref().unwrap_or(chat_id)),
         ("text", &msg),
         ("parse_mode", "HTML"),
         ("disable_notification", silent),
