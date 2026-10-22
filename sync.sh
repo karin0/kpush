@@ -1,5 +1,14 @@
 #!/bin/bash
 set -e
-remote="${1:-cloud}"
+cd "$(dirname "$0")"
+if [ $# -eq 0 ]; then
+	echo "usage: $0 HOST..." >&2
+	exit 2
+fi
+set -a
+. ./.env
+set +a
 cargo build --release
-exec rsync -avz --progress target/release/kpush "$remote:~/bin/"
+for host in "$@"; do
+	rsync -pz --timeout=60 --rsync-path='sudo rsync' target/release/kpush "$host:/usr/local/bin/kpush"
+done
