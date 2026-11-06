@@ -36,9 +36,8 @@ mod proxy {
     }
 }
 
-// Embedded on purpose. The bot is restricted to a single account, so a leaked
-// token buys spam and 48h message deletion until it is revoked. Moving it to a
-// runtime config file does not change that.
+// Embedded on purpose, since every account on a host may run kpush. The binary
+// is installed with mode 0711, so only root can read the token out of it.
 const URL: &str = concat!(
     "https://api.telegram.org/bot",
     env!("BOT_TOKEN"),

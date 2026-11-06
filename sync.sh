@@ -10,5 +10,5 @@ set -a
 set +a
 cargo build --release
 for host in "$@"; do
-	rsync -pz --timeout=60 --rsync-path='sudo rsync' target/release/kpush "$host:/usr/local/bin/kpush"
+	rsync -pz --chmod=0711 --timeout=60 --rsync-path='sudo rsync' target/release/kpush "$host:/usr/local/bin/kpush"
 done
