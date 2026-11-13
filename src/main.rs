@@ -46,7 +46,7 @@ const URL: &str = concat!(
 const CHAT_ID: &str = env!("CHAT_ID");
 const CHAT_ID_SILENT: &str = env!("CHAT_ID_SILENT");
 
-// Telegram counts the text in UTF-16 units after entity parsing, so the markup
+// Telegram counts the text in code points after entity parsing, so the markup
 // and the escape sequences stay out of the budget.
 const TEXT_LIMIT: usize = 4096;
 const TRUNCATED: &str = "\n[truncated]";
@@ -64,20 +64,13 @@ struct Args {
     chat: Option<String>,
 }
 
-/// Longest prefix of `body` that leaves `TRUNCATED` room within `limit` units.
+/// Longest prefix of `body` that leaves `TRUNCATED` room within `limit` chars.
 fn clamp(body: &str, limit: usize) -> (&str, &str) {
-    let mut units = 0;
-    let mut fits = 0;
-    for (i, c) in body.char_indices() {
-        units += c.len_utf16();
-        if units > limit {
-            return (&body[..fits], TRUNCATED);
-        }
-        if units + TRUNCATED.len() <= limit {
-            fits = i + c.len_utf8();
-        }
+    let end = |n: usize| body.char_indices().nth(n).map(|(i, _)| i);
+    match (end(limit.saturating_sub(TRUNCATED.len())), end(limit)) {
+        (Some(cut), Some(_)) => (&body[..cut], TRUNCATED),
+        _ => (body, ""),
     }
-    (body, "")
 }
 
 /// Message text for `parse_mode=HTML`, clamped to what Telegram accepts. The
@@ -87,7 +80,7 @@ fn compose(title: &str, body: &str) -> String {
     let used = if title.is_empty() {
         0
     } else {
-        title.encode_utf16().count() + 1
+        title.chars().count() + 1
     };
     let (body, truncated) = clamp(body.trim_end(), TEXT_LIMIT.saturating_sub(used));
 
@@ -171,8 +164,8 @@ fn main() -> ExitCode {
 mod tests {
     use super::{TRUNCATED, clamp, compose};
 
-    fn units(s: &str) -> usize {
-        s.encode_utf16().count()
+    fn chars(s: &str) -> usize {
+        s.chars().count()
     }
 
     #[test]
@@ -198,15 +191,17 @@ mod tests {
         let body = "日".repeat(100);
         let (kept, marker) = clamp(&body, 20);
         assert_eq!(marker, TRUNCATED);
-        assert_eq!(units(kept) + units(marker), 20);
+        assert_eq!(chars(kept) + chars(marker), 20);
         assert!(kept.ends_with('日'));
     }
 
     #[test]
-    fn counts_surrogate_pairs_as_two() {
-        let body = "🦀".repeat(10);
+    fn counts_a_char_outside_the_bmp_as_one() {
+        let body = "🦀".repeat(16);
+        assert_eq!(clamp(&body, 16), (body.as_str(), ""));
+        let body = "🦀".repeat(17);
         let (kept, marker) = clamp(&body, 16);
-        assert_eq!(kept, "🦀🦀");
-        assert_eq!(units(kept) + units(marker), 16);
+        assert_eq!(kept, "🦀".repeat(4));
+        assert_eq!(chars(kept) + chars(marker), 16);
     }
 }
