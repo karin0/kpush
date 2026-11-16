@@ -37,8 +37,7 @@ mod proxy {
 }
 
 // Embedded so that kpush needs no config file or secret store at run time, and
-// can still report when those fail. sync.sh installs the binary so that only
-// root and one group can run or read it.
+// can still report when those fail.
 const URL: &str = concat!(
     "https://api.telegram.org/bot",
     env!("BOT_TOKEN"),
