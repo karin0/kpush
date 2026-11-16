@@ -10,5 +10,6 @@ set -a
 set +a
 cargo build --release
 for host in "$@"; do
-	rsync -pz --chmod=0711 --timeout=60 --rsync-path='sudo rsync' target/release/kpush "$host:/usr/local/bin/kpush"
+	group=$(ssh "$host" id -gn)
+	rsync -pz --chmod=0750 --chown="root:$group" --timeout=60 --rsync-path='sudo rsync' target/release/kpush "$host:/usr/local/bin/kpush"
 done

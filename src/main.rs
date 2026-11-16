@@ -36,8 +36,8 @@ mod proxy {
     }
 }
 
-// Embedded on purpose, since every account on a host may run kpush. The binary
-// is installed with mode 0711, so only root can read the token out of it.
+// Embedded on purpose, since sync.sh installs the binary so that only root and
+// one group can run or read it.
 const URL: &str = concat!(
     "https://api.telegram.org/bot",
     env!("BOT_TOKEN"),

@@ -22,4 +22,4 @@ The `proxy` feature sends through `$HTTP_PROXY`, or through the URL in `~/.krr_p
 
 ## Installing
 
-`./sync.sh HOST...` loads the variables above from `.env`, builds a release binary and installs it to `/usr/local/bin/kpush` on each host over SSH, which needs passwordless sudo there. The binary gets mode 0711, so every account can run it and only root can read the embedded token.
+`./sync.sh HOST...` loads the variables above from `.env`, builds a release binary and installs it to `/usr/local/bin/kpush` on each host over SSH, which needs passwordless sudo there. The binary gets mode 0750, owned by root and by the primary group of the account that sync.sh logs in as, so only root and that group can run it or read the embedded token. Mode 0711 hides the file but not the token, since a binary without setuid honors `LD_PRELOAD`, and a preloaded library can read the process memory.
